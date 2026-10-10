@@ -5,6 +5,7 @@ import { buildProjectThreadStartTurnInput } from "../../lib/projectThreadStartTu
 import { useWorktreeSetup } from "./use-worktree-setup";
 import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
 import { AppBar } from "../../components/ui/AppBar";
+import { latestReply } from "../../lib/conversationReply";
 import { ConversationPlaybackBar } from "./ConversationPlaybackBar";
 import { useConversationSpeech } from "./useConversationSpeech";
 import {
@@ -304,6 +305,12 @@ function ThreadRouteContent(
       ? null
       : scopedThreadKey(selectedThread.environmentId, selectedThread.id);
   useConversationSpeech({ threadKey: conversationThreadKey, detail: selectedThreadDetail });
+  const conversationRuns = selectedThreadDetail?.runs;
+  const conversationMessages = selectedThreadDetail?.messages;
+  const lastReplyText =
+    conversationRuns && conversationMessages
+      ? (latestReply({ runs: conversationRuns, messages: conversationMessages })?.text ?? null)
+      : null;
   const { selectedThreadCwd } = useSelectedThreadWorktree();
   const composer = useThreadComposerState();
   const gitState = useSelectedThreadGitState();
@@ -908,25 +915,26 @@ function ThreadRouteContent(
         <ThreadScreenBinding
           header={
             <>
-            <ThreadHeader
-              title={selectedThread.title}
-              subtitle={headerSubtitle}
-              headerColor={headerColor}
-              usesNativeHeaderGlass={usesNativeHeaderGlass}
-              gitControls={threadGitControlProps}
-              hasThreadCwd={selectedThreadCwd !== null}
-              hasWorkspaceRoot={Boolean(selectedThreadProject?.workspaceRoot)}
-              fileInspectorSupported={fileInspector.supported}
-              inspectorMode={inspectorMode}
-              onToggleInspector={handleToggleInspector}
-              onOpenGitInspector={handleOpenGitInspector}
-              onOpenFilesInspector={handleOpenFilesInspector}
-              onReturnToThread={props.onReturnToThread}
-            />
-            <ConversationPlaybackBar
-              threadKey={conversationThreadKey}
-              headerOverlaysContent={usesNativeHeaderGlass}
-            />
+              <ThreadHeader
+                title={selectedThread.title}
+                subtitle={headerSubtitle}
+                headerColor={headerColor}
+                usesNativeHeaderGlass={usesNativeHeaderGlass}
+                gitControls={threadGitControlProps}
+                hasThreadCwd={selectedThreadCwd !== null}
+                hasWorkspaceRoot={Boolean(selectedThreadProject?.workspaceRoot)}
+                fileInspectorSupported={fileInspector.supported}
+                inspectorMode={inspectorMode}
+                onToggleInspector={handleToggleInspector}
+                onOpenGitInspector={handleOpenGitInspector}
+                onOpenFilesInspector={handleOpenFilesInspector}
+                onReturnToThread={props.onReturnToThread}
+              />
+              <ConversationPlaybackBar
+                threadKey={conversationThreadKey}
+                lastReplyText={lastReplyText}
+                headerOverlaysContent={usesNativeHeaderGlass}
+              />
             </>
           }
           canOperateThread={canOperateThread}

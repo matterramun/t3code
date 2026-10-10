@@ -1,12 +1,12 @@
 import * as Speech from "expo-speech";
 import { useSyncExternalStore } from "react";
 
-import { splitSpeechChunks } from "../lib/conversationReply";
+import { splitSpeechSentences } from "../lib/conversationReply";
 import { createSpeechPlayback } from "../lib/speechPlayback";
 import { speechAudioFocus } from "./speechAudioFocus";
 
-// Short chunks keep pause and resume close to where the listener stopped.
-const PLAYBACK_CHUNK_LENGTH = 400;
+// One sentence per chunk, so pause, resume and skipping all move by a sentence.
+const MAX_SENTENCE_LENGTH = 400;
 
 const playback = createSpeechPlayback({
   engine: {
@@ -23,7 +23,7 @@ const playback = createSpeechPlayback({
   },
   focus: speechAudioFocus,
   split: (text) =>
-    splitSpeechChunks(text, Math.min(PLAYBACK_CHUNK_LENGTH, Speech.maxSpeechInputLength)),
+    splitSpeechSentences(text, Math.min(MAX_SENTENCE_LENGTH, Speech.maxSpeechInputLength)),
 });
 
 speechAudioFocus.onFocusLost(() => playback.pause());
@@ -43,6 +43,16 @@ export function pauseSpeaking(): void {
 
 export function resumeSpeaking(): void {
   playback.resume();
+}
+
+/** Jumps by whole sentences: -1 goes back one, 1 forward one. */
+export function skipSentences(by: number): void {
+  playback.skip(by);
+}
+
+/** Starts the reply being read over from its first sentence. */
+export function restartSpeaking(): void {
+  playback.restart();
 }
 
 /** Whether a reply is being read, paused part way, or nothing is playing. */

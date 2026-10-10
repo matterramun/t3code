@@ -2,7 +2,9 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   createConversationReplyTracker,
+  latestReply,
   splitSpeechChunks,
+  splitSpeechSentences,
   toSpokenText,
   type ConversationMessage,
 } from "./conversationReply";
@@ -51,6 +53,16 @@ describe("splitSpeechChunks", () => {
     const chunks = splitSpeechChunks("Hello there. ".repeat(40), 50);
     expect(chunks.every((chunk) => chunk.length <= 50)).toBe(true);
     expect(chunks.join(" ")).toBe("Hello there. ".repeat(40).trim());
+  });
+});
+
+describe("splitSpeechSentences", () => {
+  it("gives one piece per sentence", () => {
+    expect(splitSpeechSentences("One. Two! Three?", 100)).toEqual(["One.", "Two!", "Three?"]);
+  });
+
+  it("cuts a sentence longer than the limit on words", () => {
+    expect(splitSpeechSentences("aaa bbb ccc. Dd.", 7)).toEqual(["aaa bbb", "ccc.", "Dd."]);
   });
 });
 
@@ -122,5 +134,33 @@ describe("createConversationReplyTracker", () => {
         ],
       }),
     ).toBeNull();
+  });
+});
+
+describe("latestReply", () => {
+  it("returns the newest completed run's final reply, as speech", () => {
+    const runs = [
+      { id: "r1", status: "completed" },
+      { id: "r2", status: "completed" },
+    ];
+    const messages = [assistant("m1", "r1", "First"), assistant("m2", "r2", "**Second** answer")];
+    expect(latestReply({ runs, messages })).toEqual({
+      runId: "r2",
+      messageId: "m2",
+      text: "Second answer.",
+    });
+  });
+
+  it("skips a run still working and falls back to the one before", () => {
+    const runs = [
+      { id: "r1", status: "completed" },
+      { id: "r2", status: "running" },
+    ];
+    const messages = [assistant("m1", "r1", "Done before"), assistant("m2", "r2", "Partial")];
+    expect(latestReply({ runs, messages })?.messageId).toBe("m1");
+  });
+
+  it("is null when no run has completed with a reply", () => {
+    expect(latestReply({ runs: [{ id: "r1", status: "running" }], messages: [] })).toBeNull();
   });
 });

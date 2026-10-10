@@ -108,6 +108,58 @@ describe("createSpeechPlayback", () => {
     expect(events.some((event) => event.startsWith("focus"))).toBe(false);
   });
 
+  it("skips forward and back by a chunk while reading", () => {
+    const { playback, spoken } = setup();
+    playback.speak("one|two|three");
+    playback.skip(1);
+    expect(spoken).toEqual(["one", "two"]);
+    playback.skip(-1);
+    expect(spoken).toEqual(["one", "two", "one"]);
+    playback.skip(-1);
+    expect(spoken.at(-1)).toBe("one");
+    expect(playback.getState()).toBe("speaking");
+  });
+
+  it("skipping past the last chunk ends the reply and releases focus", () => {
+    const { playback, events } = setup();
+    playback.speak("one|two");
+    playback.skip(1);
+    playback.skip(1);
+    expect(playback.getState()).toBe("idle");
+    expect(events.at(-1)).toBe("focus-release");
+  });
+
+  it("moves the resume point while paused without speaking", () => {
+    const { playback, spoken } = setup();
+    playback.speak("one|two|three");
+    playback.pause();
+    playback.skip(2);
+    expect(playback.getState()).toBe("paused");
+    expect(spoken).toEqual(["one"]);
+    playback.resume();
+    expect(spoken).toEqual(["one", "three"]);
+  });
+
+  it("restarts from the first chunk, including from a pause", () => {
+    const { playback, spoken, finishChunk } = setup();
+    playback.speak("one|two");
+    finishChunk();
+    playback.restart();
+    expect(spoken).toEqual(["one", "two", "one"]);
+    playback.pause();
+    playback.restart();
+    expect(playback.getState()).toBe("speaking");
+    expect(spoken.at(-1)).toBe("one");
+  });
+
+  it("ignores skip and restart when nothing is playing", () => {
+    const { playback, spoken } = setup();
+    playback.skip(1);
+    playback.restart();
+    expect(spoken).toEqual([]);
+    expect(playback.getState()).toBe("idle");
+  });
+
   it("tells subscribers about each state change", () => {
     const { playback, finishChunk } = setup();
     const seen: string[] = [];

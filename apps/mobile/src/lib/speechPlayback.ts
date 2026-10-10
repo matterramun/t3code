@@ -107,6 +107,32 @@ export function createSpeechPlayback(input: {
       setState("speaking");
       playCurrent();
     },
+    /**
+     * Moves by whole chunks. While reading it carries on from the new spot; while paused
+     * it only moves the resume point. Skipping past the last chunk ends the reply, and
+     * skipping back from the first one starts it over.
+     */
+    skip(by: number) {
+      if (state === "idle") return;
+      index = Math.max(0, index + by);
+      if (state === "paused") {
+        if (index >= chunks.length) finish();
+        return;
+      }
+      generation += 1;
+      input.engine.stop();
+      playCurrent();
+    },
+    /** Starts the current reply over from its first chunk, even if it is paused. */
+    restart() {
+      if (state === "idle") return;
+      index = 0;
+      generation += 1;
+      input.engine.stop();
+      holdFocus();
+      setState("speaking");
+      playCurrent();
+    },
     stop() {
       if (state === "idle") return;
       generation += 1;
