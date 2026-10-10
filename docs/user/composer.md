@@ -201,6 +201,12 @@ that phone. When the agent finishes a turn, the last message it wrote is spoken;
 code blocks are skipped. Replies that were already there when you turned it on are
 not read.
 
+While Conversation is on, a **Pause reading** button sits under the thread title.
+Tap it to pause the reply and tap it again to carry on from the sentence you were
+on. Other apps' audio, such as music or a podcast, pauses while a reply is read and
+resumes when it finishes or you pause it. If another app takes over the audio, such
+as a call, reading pauses too.
+
 Speech stops when you start dictating, when a new turn starts, when you turn
 Conversation off, and when you leave the thread. The setting is saved per thread on
 this device only.

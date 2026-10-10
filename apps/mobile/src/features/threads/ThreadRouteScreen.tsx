@@ -4,6 +4,7 @@ import { buildProjectThreadStartTurnInput } from "../../lib/projectThreadStartTu
 import { useWorktreeSetup } from "./use-worktree-setup";
 import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
 import { ScreenHeader } from "../../components/ScreenHeader";
+import { ConversationPlaybackBar } from "./ConversationPlaybackBar";
 import { useConversationSpeech } from "./useConversationSpeech";
 import {
   StackActions,
@@ -292,13 +293,11 @@ function ThreadRouteContent(
   );
   const selectedThreadDetailState = props.selectedThreadDetailState;
   const selectedThreadDetail = Option.getOrNull(selectedThreadDetailState.data);
-  useConversationSpeech({
-    threadKey:
-      selectedThread === null
-        ? null
-        : scopedThreadKey(selectedThread.environmentId, selectedThread.id),
-    detail: selectedThreadDetail,
-  });
+  const conversationThreadKey =
+    selectedThread === null
+      ? null
+      : scopedThreadKey(selectedThread.environmentId, selectedThread.id);
+  useConversationSpeech({ threadKey: conversationThreadKey, detail: selectedThreadDetail });
   const { selectedThreadCwd } = useSelectedThreadWorktree();
   const composer = useThreadComposerState();
   const gitState = useSelectedThreadGitState();
@@ -993,6 +992,10 @@ function ThreadRouteContent(
       />
 
       <ThreadPane>
+        <ConversationPlaybackBar
+          threadKey={conversationThreadKey}
+          headerOverlaysContent={usesNativeHeaderGlass}
+        />
         <ThreadDetailScreen
           canOperateThread={canOperateThread}
           selectedThread={selectedThreadWithDraftSettings ?? selectedThread}
