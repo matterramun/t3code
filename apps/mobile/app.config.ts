@@ -385,6 +385,15 @@ const config: ExpoConfig = {
       },
     ],
     [
+      // Android dictation listens through the system recognizer. The plugin adds
+      // the RECORD_AUDIO permission and the recognition-service package query.
+      "expo-speech-recognition",
+      {
+        microphonePermission: "Allow T3 Code to use your microphone for voice input.",
+        speechRecognitionPermission: "Allow T3 Code to turn your speech into text for voice input.",
+      },
+    ],
+    [
       "expo-camera",
       {
         cameraPermission: "Allow T3 Code to access your camera so you can scan pairing QR codes.",
@@ -393,7 +402,15 @@ const config: ExpoConfig = {
         recordAudioAndroid: false,
       },
     ],
-    ["expo-image-picker", { photosPermission: false, microphonePermission: false }],
+    [
+      "expo-image-picker",
+      {
+        photosPermission: false,
+        // `false` would block RECORD_AUDIO on Android, which dictation needs. The
+        // picker never records audio itself; this is the same text expo-audio sets.
+        microphonePermission: "Allow T3 Code to use your microphone for voice input.",
+      },
+    ],
     [
       "expo-splash-screen",
       {

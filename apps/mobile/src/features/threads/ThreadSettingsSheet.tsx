@@ -261,6 +261,11 @@ type ThreadSettingsSessionProps = {
   readonly onUpdateOptionSelections: (selections: ReadonlyArray<ProviderOptionSelection>) => void;
   readonly runtimeMode: RuntimeMode;
   readonly onUpdateRuntimeMode: (mode: RuntimeMode) => void;
+  /** Present only for an existing thread: read its finished replies aloud. */
+  readonly conversation?: {
+    readonly enabled: boolean;
+    readonly onChange: (enabled: boolean) => void;
+  };
 };
 
 export type ExistingThreadSettingsRouteSession = ThreadSettingsSessionProps & {
@@ -317,6 +322,7 @@ type ThreadSettingsSessionValue = {
   readonly runtimeMode: RuntimeMode;
   readonly runtimeModeChoices: ReturnType<typeof runtimeModeChoicesForSupportedModes>;
   readonly onUpdateRuntimeMode: (mode: RuntimeMode) => void;
+  readonly conversation: ThreadSettingsSessionProps["conversation"];
   readonly displayedDescriptors: ReadonlyArray<ProviderOptionDescriptor>;
   readonly promptTraits: ReturnType<typeof getPromptControlledTraits>;
   readonly displayedModelSelection: ModelSelection | null;
@@ -626,6 +632,7 @@ function ThreadSettingsSessionProvider(
     runtimeMode: compatibleRuntimeMode,
     runtimeModeChoices,
     onUpdateRuntimeMode: props.onUpdateRuntimeMode,
+    conversation: props.conversation,
     displayedDescriptors,
     promptTraits,
     displayedModelSelection: pendingModel?.selection ?? props.selectedModel,
@@ -904,7 +911,7 @@ function ThreadSettingsOptionsItem(props: {
         })}
         <Animated.View layout={THREAD_SETTINGS_OPTIONS_LAYOUT_TRANSITION}>
           <DisclosureRow
-            isLast
+            isLast={!session.conversation}
             label="Runtime"
             value={
               session.runtimeModeChoices.find((choice) => choice.mode === session.runtimeMode)
@@ -913,6 +920,16 @@ function ThreadSettingsOptionsItem(props: {
             onPress={() => props.onOpenSubmenu({ kind: "runtime" })}
           />
         </Animated.View>
+        {session.conversation ? (
+          <Animated.View layout={THREAD_SETTINGS_OPTIONS_LAYOUT_TRANSITION}>
+            <SwitchRow
+              isLast
+              label="Conversation"
+              value={session.conversation.enabled}
+              onValueChange={session.conversation.onChange}
+            />
+          </Animated.View>
+        ) : null}
       </Animated.View>
 
       <Text className="px-5 pb-2 pt-7 text-sm font-t3-medium text-foreground-muted">Catalog</Text>

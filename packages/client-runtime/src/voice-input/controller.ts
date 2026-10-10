@@ -191,6 +191,7 @@ export class VoiceInputController {
   private readonly ownedRecordingUris = new Set<string>();
   private recordingConfigured = false;
   private finishing = false;
+  private requestingPermission = false;
 
   constructor(dependencies: VoiceInputControllerDependencies) {
     this.dependencies = dependencies;
@@ -235,7 +236,10 @@ export class VoiceInputController {
         return;
       }
 
-      const permission = await this.dependencies.requestPermission();
+      this.requestingPermission = true;
+      const permission = await this.dependencies.requestPermission().finally(() => {
+        this.requestingPermission = false;
+      });
       if (!this.isCurrent(operationToken)) return;
       if (!permission.granted) {
         this.setError(
@@ -322,6 +326,8 @@ export class VoiceInputController {
   }
 
   appMovedToBackground(): Promise<void> | void {
+    // Android pauses the activity while the system permission dialog is open.
+    if (this.requestingPermission) return;
     if (this.state.phase === "preparing") {
       this.invalidateOperation();
       this.setError("Voice input stopped when the app moved to the background.", "retry");

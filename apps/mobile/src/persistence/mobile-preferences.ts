@@ -85,6 +85,8 @@ export interface Preferences {
   readonly threadListWorkingShelfExpanded?: boolean;
   readonly threadListFilters?: ThreadListFilters;
   readonly pullRequestListFilters?: PullRequestListPreferences;
+  /** Scoped keys of threads whose finished replies are read aloud. Device-local. */
+  readonly conversationThreads?: ReadonlyArray<string>;
 }
 
 export class MobilePreferencesLoadError extends Schema.TaggedError<MobilePreferencesLoadError>()(
@@ -155,6 +157,7 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     threadListWorkingShelfExpanded?: boolean;
     threadListFilters?: ThreadListFilters;
     pullRequestListFilters?: PullRequestListPreferences;
+    conversationThreads?: ReadonlyArray<string>;
   } = {};
 
   if (typeof parsed.pullRequestHideTestFiles === "boolean") {
@@ -281,6 +284,11 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   }
   if (isPullRequestListPreferences(parsed.pullRequestListFilters)) {
     preferences.pullRequestListFilters = parsed.pullRequestListFilters;
+  }
+  if (Array.isArray(parsed.conversationThreads)) {
+    preferences.conversationThreads = parsed.conversationThreads.filter(
+      (key): key is string => typeof key === "string",
+    );
   }
   return preferences;
 }
