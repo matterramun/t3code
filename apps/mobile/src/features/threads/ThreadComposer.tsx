@@ -116,6 +116,7 @@ import {
   ComposerDictationToolbar,
 } from "../voice-input/ComposerDictationControl";
 import { useVoiceInputController } from "../voice-input/useVoiceInputController";
+import { useThreadConversation } from "../../state/use-thread-conversation";
 import { resolveVoiceComposerPresentation } from "../voice-input/voiceInputPresentation";
 import {
   rememberModelOptions,
@@ -694,6 +695,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
     [currentModelOption?.capabilities, currentModelSelection.options],
   );
   const settingsOwnerId = composerOwnerKey;
+  const conversation = useThreadConversation(composerOwnerKey);
   const settingsRouteSession = useMemo<ExistingThreadSettingsRouteSession>(
     () => ({
       ownerId: settingsOwnerId,
@@ -717,8 +719,11 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
       },
       runtimeMode: currentRuntimeMode,
       onUpdateRuntimeMode: props.onUpdateRuntimeMode,
+      conversation: { enabled: conversation.enabled, onChange: conversation.setEnabled },
     }),
     [
+      conversation.enabled,
+      conversation.setEnabled,
       currentModelSelection,
       props.reportedModelSelection,
       currentRuntimeMode,

@@ -5,8 +5,6 @@ import {
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
   setIsAudioActiveAsync,
-  type RecorderState,
-  type RecordingStatus,
 } from "expo-audio";
 import { File } from "expo-file-system";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
@@ -29,7 +27,9 @@ import {
   preferredMicrophoneInput,
   rememberMicrophones,
 } from "../../lib/microphonePriority";
+import { getPlatformVoiceCapture } from "../../native/platformVoiceCapture";
 import { getLocalVoiceTranscriber } from "../../native/voiceTranscription";
+import type { VoiceCaptureState, VoiceCaptureStatus } from "../../native/voiceCaptureTypes";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
 import { getNativeShowcaseScene } from "../showcase/nativeShowcaseScene";
 import {
@@ -85,6 +85,10 @@ async function configureVoiceRecordingAudio(): Promise<void> {
   }
 }
 
+// Android listens through the platform recognizer instead of recording a file.
+const platformCapture = getPlatformVoiceCapture();
+const getTranscriber = platformCapture?.getTranscriber ?? getLocalVoiceTranscriber;
+
 const VoiceInputContext = createContext<ReturnType<typeof useVoiceInputRuntime> | null>(null);
 
 export function VoiceInputProvider({ children }: { readonly children: ReactNode }) {
@@ -124,13 +128,15 @@ function useVoiceInputRuntime() {
   const audioLevelsRef = useRef(Array<number>(VOICE_WAVEFORM_SAMPLE_COUNT).fill(0));
   const audioLevels = useSharedValue(audioLevelsRef.current);
   const sessionRef = useRef<VoiceInputSession | null>(null);
-  const recorderRef = useRef<LazyVoiceRecorder<RecorderState> | null>(null);
+  const recorderRef = useRef<LazyVoiceRecorder<VoiceCaptureState> | null>(null);
 
   if (!sessionRef.current || !recorderRef.current) {
     // The native recorder is created when dictation starts, not on app launch.
     const recorder = createLazyVoiceRecorder({
-      create: () => new AudioModule.AudioRecorder(VOICE_RECORDING_OPTIONS),
-      onStatus: (status: RecordingStatus) => {
+      create: platformCapture
+        ? platformCapture.createRecorder
+        : () => new AudioModule.AudioRecorder(VOICE_RECORDING_OPTIONS),
+      onStatus: (status: VoiceCaptureStatus) => {
         sessionRef.current?.controller.handleRecorderStatus({
           isFinished: status.isFinished,
           hasError: status.hasError || status.mediaServicesDidReset === true,
@@ -157,14 +163,16 @@ function useVoiceInputRuntime() {
     recorderRef.current = recorder;
     sessionRef.current = new VoiceInputSession({
       recorder,
-      getTranscriber: getLocalVoiceTranscriber,
-      requestPermission: async () => {
-        const permission = await requestRecordingPermissionsAsync();
-        return { granted: permission.granted, canAskAgain: permission.canAskAgain };
-      },
-      configureRecording: configureVoiceRecordingAudio,
-      releaseRecording: releaseVoiceRecordingAudio,
-      deleteRecording: (uri) => new File(uri).delete(),
+      getTranscriber,
+      requestPermission:
+        platformCapture?.requestPermission ??
+        (async () => {
+          const permission = await requestRecordingPermissionsAsync();
+          return { granted: permission.granted, canAskAgain: permission.canAskAgain };
+        }),
+      configureRecording: platformCapture ? async () => {} : configureVoiceRecordingAudio,
+      releaseRecording: platformCapture ? async () => {} : releaseVoiceRecordingAudio,
+      deleteRecording: platformCapture ? () => {} : (uri) => new File(uri).delete(),
       onStateChange: (nextState) =>
         setState({
           state: nextState,
@@ -256,7 +264,7 @@ function useVoiceInputRuntime() {
   return {
     // Store screenshots show the dictation button even on simulators, whose
     // on-device transcription is unavailable.
-    isAvailable: getLocalVoiceTranscriber() !== null || getNativeShowcaseScene() !== null,
+    isAvailable: getTranscriber() !== null || getNativeShowcaseScene() !== null,
     state,
     audioLevels,
     elapsedSeconds,

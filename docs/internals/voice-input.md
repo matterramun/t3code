@@ -2,8 +2,11 @@
 
 Transcription edits a composer draft. It does not submit an agent turn. Audio is
 temporary client input, and only normal message submission sends the resulting
-text. The current implementation transcribes locally on supported iOS devices;
-environment-backed transcription is not implemented.
+text. iOS transcribes a recorded file with Apple's on-device model. Android has no file
+transcriber, so its [platform capture](../../apps/mobile/src/native/platformVoiceCapture.android.ts)
+plugs the system recognizer into the same recorder and transcriber seams: it listens to
+the microphone itself, records no file, and the transcript is read from the session the
+recorder started. Environment-backed transcription is not implemented.
 
 The [shared controller](../../packages/client-runtime/src/voice-input/controller.ts)
 owns the operation while the client supplies capture and transcription. Preparation

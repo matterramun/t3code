@@ -616,6 +616,19 @@ describe("VoiceInputController", () => {
     expect(harness.deleted).toEqual(["file:///voice.m4a", "file:///reset-empty.m4a"]);
   });
 
+  it("keeps preparing when the app backgrounds behind the permission dialog", async () => {
+    const permission = deferred<{ granted: boolean; canAskAgain: boolean }>();
+    const harness = createHarness({ requestPermission: () => permission.promise });
+    const starting = harness.controller.start();
+    harness.controller.appMovedToBackground();
+    expect(harness.controller.currentState.phase).toBe("preparing");
+    permission.resolve({ granted: true, canAskAgain: true });
+    await starting;
+
+    expect(harness.recorder.record).toHaveBeenCalled();
+    expect(harness.controller.currentState.phase).toBe("recording");
+  });
+
   it("cancels preparation when the app reaches the background", async () => {
     const preparation = deferred<PreparedVoiceTranscription>();
     const preparationEntered = deferred<AbortSignal>();

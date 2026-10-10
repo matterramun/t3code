@@ -1,28 +1,10 @@
 import type { VoiceRecorder } from "@t3tools/client-runtime/voice-input";
 
+import type { NativeVoiceRecorder, VoiceRecordingInput } from "../../native/voiceCaptureTypes";
+
+export type { NativeVoiceRecorder, VoiceRecordingInput };
+
 type Subscription = { remove(): void };
-
-export interface VoiceRecordingInput {
-  readonly uid: string;
-  readonly name: string;
-  readonly type: string;
-}
-
-// The subset of expo-audio's native `AudioRecorder` the voice input hook uses.
-export interface NativeVoiceRecorder<TStatus, TRecorderState> {
-  readonly uri: string | null;
-  prepareToRecordAsync(): Promise<void>;
-  record(options: { readonly forDuration: number }): void;
-  stop(): Promise<void>;
-  getStatus(): TRecorderState;
-  addListener(
-    eventName: "recordingStatusUpdate",
-    listener: (status: TStatus) => void,
-  ): Subscription;
-  getAvailableInputs(): ReadonlyArray<VoiceRecordingInput>;
-  setInput(uid: string): void;
-  release(): void;
-}
 
 export interface LazyVoiceRecorder<TRecorderState> extends VoiceRecorder {
   /** Status of the native recorder, or null before a recording has prepared one. */

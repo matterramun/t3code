@@ -167,10 +167,11 @@ Stashes containing uploaded files must be restored in their original environment
 Those files are retained for 24 hours. After an upload expires, restore the prompt
 and use **Attach again** or remove the missing file before sending.
 
-## Voice input on iPhone
+## Voice input on mobile
 
-On supported iPhones with iOS 26 or later, use the composer's microphone to record,
-then confirm to transcribe. Text is inserted where your selection was when
+On supported iPhones with iOS 26 or later, and on Android devices with a speech
+recognition service, use the composer's microphone to record, then confirm to
+transcribe. Text is inserted where your selection was when
 recording started, ready for you to review and edit before sending.
 
 The first use may download Apple's speech model and needs a network connection.
@@ -186,8 +187,23 @@ for example, put **Other Bluetooth** above your AirPods so a new headset is pref
 while the AirPods microphone stays low. By default, CarPlay comes after the built-in
 microphone.
 
-Transcription runs on your device. T3 Code deletes the temporary audio after
+On iPhone, transcription runs on your device. T3 Code deletes the temporary audio after
 transcription or cancellation; only the message text is sent when you submit.
+
+On Android, your device's speech recognition service, usually Google's, listens and
+transcribes. Whether that happens offline depends on your device and language settings.
+T3 Code never stores the audio. Dictation ends by itself when you stop talking.
+
+### Conversation
+
+Turn on **Conversation** in a thread's settings to have its replies read aloud on
+that phone. When the agent finishes a turn, the last message it wrote is spoken;
+code blocks are skipped. Replies that were already there when you turned it on are
+not read.
+
+Speech stops when you start dictating, when a new turn starts, when you turn
+Conversation off, and when you leave the thread. The setting is saved per thread on
+this device only.
 
 ## Queued messages
 

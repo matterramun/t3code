@@ -6,6 +6,7 @@ import {
 } from "@t3tools/client-runtime/voice-input";
 
 import type { ComposerEditorSelection } from "../../components/ComposerEditor";
+import { stopSpeaking } from "../../native/speech";
 import { useGlobalVoiceInput } from "./VoiceInputProvider";
 import { createVoiceInputTarget } from "./voiceInputSession";
 
@@ -46,6 +47,8 @@ export function useVoiceInputController(input: {
   const start = useCallback(() => {
     const captured = latestInput.current;
     if (!captured.ownerKey || captured.disabled) return;
+    // The microphone would otherwise hear Conversation mode reading a reply.
+    stopSpeaking();
     void session.start({
       ...createVoiceInputTarget(
         captured.ownerKey,
