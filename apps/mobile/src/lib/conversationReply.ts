@@ -55,6 +55,13 @@ export function splitSpeechChunks(text: string, maxLength: number): string[] {
   return chunks;
 }
 
+/** One piece per sentence, so skipping moves by a sentence. Over-long sentences are cut to fit. */
+export function splitSpeechSentences(text: string, maxLength: number): string[] {
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .flatMap((sentence) => splitLongSentence(sentence.trim(), maxLength));
+}
+
 function splitLongSentence(sentence: string, maxLength: number): string[] {
   if (sentence.length <= maxLength) return sentence.length > 0 ? [sentence] : [];
   const pieces: string[] = [];
@@ -131,23 +138,42 @@ export function createConversationReplyTracker() {
   };
 }
 
+function isReplyCandidate(message: ConversationMessage, runId: string): boolean {
+  return (
+    message.runId === runId &&
+    message.role === "assistant" &&
+    !message.streaming &&
+    message.notification === undefined &&
+    message.delegatedCompletion === undefined
+  );
+}
+
 function finalReplyOf(
   runId: string,
   messages: ReadonlyArray<ConversationMessage>,
 ): SpokenReply | null {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index]!;
-    if (
-      message.runId !== runId ||
-      message.role !== "assistant" ||
-      message.streaming ||
-      message.notification !== undefined ||
-      message.delegatedCompletion !== undefined
-    ) {
-      continue;
-    }
+    if (!isReplyCandidate(message, runId)) continue;
     const text = toSpokenText(message.text);
     if (text.length > 0) return { runId, messageId: message.id, text };
+  }
+  return null;
+}
+
+/**
+ * The newest completed run's final reply, ready to speak. Unlike the tracker
+ * this ignores what was already read, so a finished reply can be read again.
+ */
+export function latestReply(input: {
+  readonly runs: ReadonlyArray<ConversationRun>;
+  readonly messages: ReadonlyArray<ConversationMessage>;
+}): SpokenReply | null {
+  for (let index = input.runs.length - 1; index >= 0; index -= 1) {
+    const run = input.runs[index]!;
+    if (run.status !== "completed") continue;
+    const reply = finalReplyOf(run.id, input.messages);
+    if (reply !== null) return reply;
   }
   return null;
 }

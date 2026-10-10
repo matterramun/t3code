@@ -4,6 +4,7 @@ import { buildProjectThreadStartTurnInput } from "../../lib/projectThreadStartTu
 import { useWorktreeSetup } from "./use-worktree-setup";
 import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
 import { ScreenHeader } from "../../components/ScreenHeader";
+import { latestReply } from "../../lib/conversationReply";
 import { ConversationPlaybackBar } from "./ConversationPlaybackBar";
 import { useConversationSpeech } from "./useConversationSpeech";
 import {
@@ -298,6 +299,15 @@ function ThreadRouteContent(
       ? null
       : scopedThreadKey(selectedThread.environmentId, selectedThread.id);
   useConversationSpeech({ threadKey: conversationThreadKey, detail: selectedThreadDetail });
+  const conversationRuns = selectedThreadDetail?.runs;
+  const conversationMessages = selectedThreadDetail?.messages;
+  const lastReplyText = useMemo(
+    () =>
+      conversationRuns && conversationMessages
+        ? (latestReply({ runs: conversationRuns, messages: conversationMessages })?.text ?? null)
+        : null,
+    [conversationRuns, conversationMessages],
+  );
   const { selectedThreadCwd } = useSelectedThreadWorktree();
   const composer = useThreadComposerState();
   const gitState = useSelectedThreadGitState();
@@ -994,6 +1004,7 @@ function ThreadRouteContent(
       <ThreadPane>
         <ConversationPlaybackBar
           threadKey={conversationThreadKey}
+          lastReplyText={lastReplyText}
           headerOverlaysContent={usesNativeHeaderGlass}
         />
         <ThreadDetailScreen
