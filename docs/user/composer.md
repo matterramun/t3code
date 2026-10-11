@@ -194,14 +194,14 @@ On Android, your device's speech recognition service, usually Google's, listens 
 transcribes. Whether that happens offline depends on your device and language settings.
 T3 Code never stores the audio. Dictation ends by itself when you stop talking.
 
-### Conversation
+### Read replies aloud
 
-Turn on **Conversation** in a thread's settings to have its replies read aloud on
+Turn on **Read replies aloud** in a thread's settings to have its replies read aloud on
 that phone. When the agent finishes a turn, the last message it wrote is spoken;
 code blocks are skipped. Replies that were already there when you turned it on are
 not read.
 
-While Conversation is on, a button under the thread title controls reading. It
+While it is on, a button under the thread title controls reading. It
 reads **Pause reading** while a reply plays and **Resume reading** while paused,
 carrying on from the sentence you were on. Once a reply has finished it becomes
 **Read last reply**, which reads the agent's latest reply again from the top. Three
@@ -211,7 +211,7 @@ pauses while a reply is read and resumes when it finishes or you pause it. If
 another app takes over the audio, such as a call, reading pauses too.
 
 Speech stops when you start dictating, when a new turn starts, when you turn
-Conversation off, and when you leave the thread. The setting is saved per thread on
+**Read replies aloud** off, and when you leave the thread. The setting is saved per thread on
 this device only.
 
 ## Queued messages
