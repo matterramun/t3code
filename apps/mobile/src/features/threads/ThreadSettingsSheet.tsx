@@ -924,7 +924,7 @@ function ThreadSettingsOptionsItem(props: {
           <Animated.View layout={THREAD_SETTINGS_OPTIONS_LAYOUT_TRANSITION}>
             <SwitchRow
               isLast
-              label="Conversation"
+              label="Read replies aloud"
               value={session.conversation.enabled}
               onValueChange={session.conversation.onChange}
             />
