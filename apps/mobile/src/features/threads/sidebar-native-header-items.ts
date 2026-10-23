@@ -35,6 +35,7 @@ export function createSidebarHeaderItems(input: {
   readonly filterIcon: string;
   readonly filterMenu: HomeListFilterMenu;
   readonly onOpenSettings: () => void;
+  readonly onOpenUsage: () => void;
 }): NativeStackHeaderItem[] {
   return [
     withNativeGlassHeaderItem({
@@ -47,6 +48,14 @@ export function createSidebarHeaderItems(input: {
         title: input.filterMenu.title,
         items: toNativeHeaderMenuItems(input.filterMenu.items),
       },
+    }),
+    withNativeGlassHeaderItem({
+      type: "button",
+      axisBehavior: "horizontalOnly",
+      label: "Usage",
+      accessibilityLabel: "Open usage",
+      icon: sfSymbolIcon("chart.bar.xaxis"),
+      onPress: input.onOpenUsage,
     }),
     withNativeGlassHeaderItem({
       type: "button",

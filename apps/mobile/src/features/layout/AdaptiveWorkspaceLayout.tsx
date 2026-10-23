@@ -496,6 +496,12 @@ function AdaptiveWorkspaceLayoutContent(
       params: { screen: "Settings" },
     });
   };
+  const handleOpenUsage = () => {
+    navigation.navigate("SettingsSheet", {
+      screen: "SettingsContent",
+      params: { screen: "SettingsUsage" },
+    });
+  };
 
   const selectAndroidWorkspace = useAndroidWorkspaceSelection();
   const deferredThreadSelection = useMemo(() => createDeferredNavigation(), []);
@@ -877,6 +883,7 @@ function AdaptiveWorkspaceLayoutContent(
                           onRequestVisibility={revealPrimarySidebar}
                           selectedThreadKey={selectedThreadKey}
                           onOpenSettings={handleOpenSettings}
+                          onOpenUsage={handleOpenUsage}
                           onOpenEnvironmentSettings={handleOpenEnvironmentSettings}
                           onNewThreadInProject={handleNewThreadInProject}
                           onNewThreadOnBranch={handleNewThreadOnBranch}

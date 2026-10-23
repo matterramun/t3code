@@ -26,6 +26,7 @@ export function ThreadListToolbar(props: {
   readonly filterActions: MenuAction[];
   readonly filterCustomized: boolean;
   readonly onFilterAction: NonNullable<ComponentProps<typeof Menu>["onPressAction"]>;
+  readonly onOpenUsage: () => void;
   readonly onOpenEnvironments: () => void;
   readonly sidebar?: boolean;
   readonly onLayout?: (event: LayoutChangeEvent) => void;
@@ -114,6 +115,13 @@ export function ThreadListToolbar(props: {
         searchAccessibilityLabel="Search threads"
         titleAccessibilityLabel="T3 Code, Threads"
         onOpenEnvironments={props.onOpenEnvironments}
+        trailing={
+          <AndroidHeaderIconButton
+            accessibilityLabel="Open usage"
+            icon="chart.bar.xaxis"
+            onPress={props.onOpenUsage}
+          />
+        }
         filter={filterButton}
       />
     </View>

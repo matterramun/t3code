@@ -2,7 +2,8 @@
 
 Open **Usage** from the sidebar or the command palette, or press `mod+u` on web and
 desktop when the terminal is not focused. Customize `usage.open` in
-**Settings → Keybindings**.
+**Settings → Keybindings**. On Android, tap the chart button in the header on the home
+screen, or open **Usage** from a thread's ⋮ menu.
 
 ## Understand your usage
 

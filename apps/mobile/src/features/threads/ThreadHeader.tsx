@@ -1,3 +1,4 @@
+import { useNavigation } from "@react-navigation/native";
 import { useMemo } from "react";
 import { AppBar } from "../../components/ui/AppBar";
 import { ScreenHeaderButton } from "../../components/ui/ScreenHeaderButton";
@@ -19,6 +20,7 @@ export function ThreadHeader(
     readonly onOpenFilesInspector: () => void;
   },
 ) {
+  const navigation = useNavigation();
   const goBack = useWorkspaceBackNavigation("threads");
   const { layout, panes, toggleAuxiliaryPane, composerKeyboardActive } =
     useAdaptiveWorkspaceLayout();
@@ -61,6 +63,16 @@ export function ThreadHeader(
         onPress: onMergeBack,
       });
     }
+    // Last, so it sits in the overflow menu on narrow screens.
+    actions.push({
+      accessibilityLabel: "Usage",
+      icon: "chart.bar.xaxis",
+      onPress: () =>
+        navigation.navigate("SettingsSheet", {
+          screen: "SettingsContent",
+          params: { screen: "SettingsUsage" },
+        }),
+    });
     return actions;
   }, [
     props.inspectorMode,
@@ -71,6 +83,7 @@ export function ThreadHeader(
     props.onOpenGitInspector,
     toggleAuxiliaryPane,
     props.onReturnToThread,
+    navigation,
     props.hasThreadCwd,
     props.hasWorkspaceRoot,
     props.gitControls.canOpenTerminal,

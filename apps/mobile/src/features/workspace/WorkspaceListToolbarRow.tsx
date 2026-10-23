@@ -19,6 +19,8 @@ export function WorkspaceListToolbarRow(props: {
   readonly searchAccessibilityLabel: string;
   readonly titleAccessibilityLabel: string;
   readonly onOpenEnvironments: () => void;
+  /** Shown next to the filter only while not searching. */
+  readonly trailing?: ReactNode;
   /** Stays trailing while searching, so it never moves and still narrows the results. */
   readonly filter: ReactNode;
 }) {
@@ -55,6 +57,7 @@ export function WorkspaceListToolbarRow(props: {
             icon="magnifyingglass"
             onPress={props.onOpenSearch}
           />
+          {props.trailing}
           {props.filter}
         </>
       )}
