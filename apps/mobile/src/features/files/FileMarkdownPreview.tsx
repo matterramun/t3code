@@ -2,8 +2,8 @@ import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { resolveMobileMarkdownMediaSource } from "../../lib/markdownMediaSource";
 import { getBrowseDirectoryPath } from "@t3tools/client-runtime/state/projects";
-import { useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { RefreshControl, ScrollView, type ScrollViewInstance, View } from "react-native";
 
 import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import { FONT_FAMILIES } from "../../lib/fontFamilies";
@@ -27,6 +27,7 @@ import {
   type NativeMarkdownTextStyle,
 } from "../../native/SelectableMarkdownText";
 import { resolveWorkspaceFilePath } from "./filePath";
+import { locateMarkdownOccurrence, type MarkdownSearch } from "./fileSearch";
 
 interface MarkdownPreviewStyles {
   readonly nativeTextStyle: NativeMarkdownTextStyle;
@@ -77,7 +78,11 @@ export function FileMarkdownPreview(props: {
   readonly relativePath: string;
   readonly threadId: ThreadId | null;
   readonly onRefresh?: () => Promise<void> | void;
+  /** Find-in-file hits: shown highlighted, with the active one scrolled into view. */
+  readonly search?: { readonly result: MarkdownSearch; readonly activeIndex: number };
 }) {
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const sectionLayouts = useRef<Array<{ y: number; height: number }>>([]);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [expandedFile, setExpandedFile] = useState<FilePreviewSource | null>(null);
   const [expandedVideo, setExpandedVideo] = useState<VideoPreviewSource | null>(null);
@@ -181,8 +186,37 @@ export function FileMarkdownPreview(props: {
     if (!openMedia(href)) void tryOpenExternalUrl(href, "markdown-link");
   };
 
+  const searchResult = props.search && props.search.result.total > 0 ? props.search : null;
+  const activeSection = searchResult
+    ? locateMarkdownOccurrence(searchResult.result, searchResult.activeIndex)
+    : null;
+  useEffect(() => {
+    if (!activeSection) return;
+    const frame = requestAnimationFrame(() => {
+      const layout = sectionLayouts.current[activeSection.section];
+      if (!layout) return;
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, layout.y + layout.height * activeSection.fraction - 120),
+        animated: true,
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeSection?.section, activeSection?.fraction, searchResult?.result]);
+  const renderMarkdown = (markdown: string) => (
+    <SelectableMarkdownText
+      markdown={markdown}
+      onLinkPress={onLinkPress}
+      renderImage={renderImage}
+      resolveImageSource={resolveImageSource}
+      onImagePress={onImagePress}
+      textStyle={styles.nativeTextStyle}
+      highlight={searchResult !== null}
+    />
+  );
+
   return (
     <ScrollView
+      ref={scrollRef}
       className="flex-1 bg-sheet"
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: 18 }}
@@ -196,14 +230,21 @@ export function FileMarkdownPreview(props: {
       }
     >
       <View className="mx-auto w-full max-w-[760px]">
-        <SelectableMarkdownText
-          markdown={props.markdown}
-          onLinkPress={onLinkPress}
-          renderImage={renderImage}
-          resolveImageSource={resolveImageSource}
-          onImagePress={onImagePress}
-          textStyle={styles.nativeTextStyle}
-        />
+        {searchResult
+          ? searchResult.result.sections.map((section, index) => (
+              <View
+                key={index}
+                onLayout={(event) => {
+                  sectionLayouts.current[index] = {
+                    y: event.nativeEvent.layout.y + 18,
+                    height: event.nativeEvent.layout.height,
+                  };
+                }}
+              >
+                {renderMarkdown(section.text)}
+              </View>
+            ))
+          : renderMarkdown(props.markdown)}
         <FilePreviewModal source={expandedFile} onRequestClose={() => setExpandedFile(null)} />
         <VideoPreviewModal source={expandedVideo} onRequestClose={() => setExpandedVideo(null)} />
       </View>

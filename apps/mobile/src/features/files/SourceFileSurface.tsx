@@ -46,6 +46,11 @@ interface SourceFileSurfaceProps {
   readonly headerInsetTop?: number;
   readonly selectable?: boolean;
   readonly onRefresh?: () => Promise<void> | void;
+  /** Find-in-file: lines holding a hit are tinted, and the active one is scrolled into view. */
+  readonly find?: {
+    readonly matchLines: ReadonlySet<number>;
+    readonly activeLine: number | null;
+  };
 }
 
 type SourceHighlightStatus = "highlighting" | "ready" | "error";
@@ -56,11 +61,18 @@ const HighlightedSourceLine = function HighlightedSourceLine(props: {
   readonly line: string;
   readonly tokens: ReadonlyArray<ReviewHighlightedToken> | null;
   readonly highlighted: boolean;
+  readonly found: boolean;
+  readonly foundActive: boolean;
   readonly wordBreak: boolean;
 }) {
   return (
     <View
-      className={cn("flex-row", props.highlighted && "bg-primary/10")}
+      className={cn(
+        "flex-row",
+        props.highlighted && "bg-primary/10",
+        props.found && "bg-primary/15",
+        props.foundActive && "bg-primary/40",
+      )}
       style={{ minHeight: props.codeSurface.rowHeight }}
     >
       <NativeText
@@ -256,6 +268,15 @@ function JavaScriptSourceFileSurface(props: SourceFileSurfaceProps) {
     return () => cancelAnimationFrame(frame);
   }, [props.path, targetIndex]);
 
+  const findActiveLine = props.find?.activeLine ?? null;
+  useEffect(() => {
+    if (findActiveLine === null) return;
+    const frame = requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex({ index: findActiveLine, animated: false, viewPosition: 0.3 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [findActiveLine]);
+
   const renderLine = ({ item, index }: { item: string; index: number }) => (
     <HighlightedSourceLine
       codeSurface={codeSurface}
@@ -263,6 +284,8 @@ function JavaScriptSourceFileSurface(props: SourceFileSurfaceProps) {
       line={item}
       tokens={tokens?.[index] ?? null}
       highlighted={index === targetIndex}
+      found={props.find?.matchLines.has(index) ?? false}
+      foundActive={index === findActiveLine}
       wordBreak={codeWordBreak}
     />
   );
@@ -323,6 +346,13 @@ function JavaScriptSourceFileSurface(props: SourceFileSurfaceProps) {
       automaticallyAdjustsScrollIndicatorInsets={usesAutomaticInsets}
       refreshControl={refreshControl}
       data={lines}
+      extraData={props.find}
+      onScrollToIndexFailed={({ index, averageItemLength }) => {
+        listRef.current?.scrollToOffset({
+          offset: Math.max(0, index * averageItemLength - 200),
+          animated: false,
+        });
+      }}
       keyExtractor={(_line, index) => String(index)}
       initialNumToRender={80}
       maxToRenderPerBatch={80}
@@ -388,7 +418,7 @@ export function SourceFileSurface(props: SourceFileSurfaceProps) {
   const NativeView = resolveNativeReviewDiffView();
   const { codeWordBreak } = useAppearanceCodeSurface();
   const surface =
-    NativeView && !codeWordBreak && !props.selectable ? (
+    NativeView && !codeWordBreak && !props.selectable && !props.find ? (
       <NativeSourceFileSurface {...props} NativeView={NativeView} />
     ) : (
       <JavaScriptSourceFileSurface {...props} />

@@ -4,7 +4,7 @@ import { resolveFilesystemReadAccess } from "@t3tools/client-runtime/state/files
 import { environmentSession } from "../../state/session";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { useEffect, useId, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
@@ -50,6 +50,9 @@ import { FileTreeBrowser } from "./FileTreeBrowser";
 import { useFileTreeEntries } from "./useFileTreeEntries";
 import { preloadWorkspaceFileContents } from "./preload-workspace-file";
 import { SourceFileSurface } from "./SourceFileSurface";
+import { FileFindBar } from "./FileFindBar";
+import { findInSource, searchMarkdown, type MarkdownSearch, type SourceFind } from "./fileSearch";
+import { prepareSourceFileDocument } from "./source-file-document";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import { ThreadFileNavigatorPane } from "./thread-file-navigator-pane";
 import { AppBar } from "../../components/ui/AppBar";
@@ -230,6 +233,8 @@ function FileContent(props: {
   readonly initialLine: number | null;
   readonly truncated: boolean;
   readonly onRefresh?: () => Promise<void> | void;
+  readonly sourceFind?: { readonly result: SourceFind; readonly activeLine: number | null };
+  readonly markdownSearch?: { readonly result: MarkdownSearch; readonly activeIndex: number };
 }) {
   // Reopening a mutable host file must not reuse a poster from an earlier visit.
   const thumbnailInstanceId = useId();
@@ -321,6 +326,7 @@ function FileContent(props: {
           relativePath={props.relativePath}
           threadId={props.threadId}
           onRefresh={props.onRefresh}
+          search={props.markdownSearch}
         />
       ) : (
         <SourceFileSurface
@@ -329,6 +335,14 @@ function FileContent(props: {
           initialLine={props.initialLine}
           headerInsetTop={props.truncated ? 0 : undefined}
           onRefresh={props.onRefresh}
+          find={
+            props.sourceFind
+              ? {
+                  matchLines: props.sourceFind.result.matchLines,
+                  activeLine: props.sourceFind.activeLine,
+                }
+              : undefined
+          }
         />
       )}
     </View>
@@ -724,6 +738,45 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       : null,
   );
   const fileData = fileQuery.data as ProjectReadFileResult | null;
+  const [findState, setFindState] = useState<{
+    readonly path: string;
+    readonly query: string;
+    readonly index: number;
+  } | null>(null);
+  const findOpen = findState !== null && findState.path === relativePath;
+  const findText = findOpen ? findState.query.trim() : "";
+  const deferredFindText = useDeferredValue(findText);
+  const findContents = fileData?.contents ?? null;
+  const findInMarkdown =
+    resolvedActiveMode === "preview" &&
+    relativePath !== null &&
+    isMarkdownPreviewFile(relativePath);
+  const canFind =
+    findContents !== null &&
+    relativePath !== null &&
+    (resolvedActiveMode === "source" || findInMarkdown);
+  const sourceFind = useMemo(
+    () =>
+      canFind && findOpen && !findInMarkdown && deferredFindText.length > 0
+        ? findInSource(prepareSourceFileDocument(findContents).lines, deferredFindText)
+        : null,
+    [canFind, findOpen, findInMarkdown, deferredFindText, findContents],
+  );
+  const markdownSearch = useMemo(
+    () =>
+      canFind && findOpen && findInMarkdown && deferredFindText.length > 0
+        ? searchMarkdown(findContents, deferredFindText)
+        : null,
+    [canFind, findOpen, findInMarkdown, deferredFindText, findContents],
+  );
+  const findTotal = markdownSearch?.total ?? sourceFind?.occurrenceLines.length ?? 0;
+  const findActiveIndex =
+    findOpen && findTotal > 0 ? Math.min(findState.index, findTotal - 1) : null;
+  const moveFind = (step: number) => {
+    if (findState === null || findTotal === 0) return;
+    const current = Math.min(findState.index, findTotal - 1);
+    setFindState({ ...findState, index: (current + step + findTotal) % findTotal });
+  };
 
   const handleSelectFile = (path: string) => {
     const targetPath =
@@ -803,6 +856,16 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
             icon: "text.alignleft",
             inline: false,
             onPress: () => setCodeWordBreak(!appearance.codeWordBreak),
+          } as const)
+        : null,
+      canFind
+        ? ({
+            id: "find",
+            title: "Find in file",
+            icon: "magnifyingglass",
+            inline: false,
+            onPress: () =>
+              setFindState({ path: relativePath, query: findState?.query ?? "", index: 0 }),
           } as const)
         : null,
       ...(mediaSource
@@ -971,6 +1034,17 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
         onReturnToThread={handleReturnToThread}
         actions={fileMenuActions}
       />
+      {findOpen && canFind ? (
+        <FileFindBar
+          query={findState.query}
+          onQueryChange={(query) => setFindState({ path: findState.path, query, index: 0 })}
+          activeIndex={findActiveIndex}
+          total={findTotal}
+          onPrevious={() => moveFind(-1)}
+          onNext={() => moveFind(1)}
+          onClose={() => setFindState(null)}
+        />
+      ) : null}
       <ScreenContent>
         <FileContent
           key={previewKey}
@@ -990,6 +1064,22 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
           threadId={threadId}
           truncated={fileData?.truncated ?? false}
           onRefresh={() => fileQuery.refresh()}
+          sourceFind={
+            sourceFind
+              ? {
+                  result: sourceFind,
+                  activeLine:
+                    findActiveIndex === null
+                      ? null
+                      : (sourceFind.occurrenceLines[findActiveIndex] ?? null),
+                }
+              : undefined
+          }
+          markdownSearch={
+            markdownSearch && findActiveIndex !== null
+              ? { result: markdownSearch, activeIndex: findActiveIndex }
+              : undefined
+          }
         />
       </ScreenContent>
       <FilePreviewModal

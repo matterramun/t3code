@@ -80,6 +80,7 @@ function enrichedStyle(
     h6: heading(6),
     strong: { color: style.strongColor, fontFamily: style.boldFontFamily, fontWeight: "normal" },
     link: { color: style.linkColor, underline: false },
+    highlight: { color: "#111827", backgroundColor: "#FDE047" },
     code: {
       fontFamily: monospace,
       color: style.inlineCodeColor,
@@ -329,6 +330,7 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
             latexMath: mathRenderingEnabled,
             hardSoftBreaks: props.preserveSoftBreaks ?? false,
             admonitions: true,
+            highlight: props.highlight ?? false,
           }}
           enableTaskListItemToggle={false}
           enableCodeBlockWrapToggle
